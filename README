@@ -1,6 +1,8 @@
 # Ember-cli-userapp
 
-This README outlines the details of collaborating on this Ember addon.
+## TODO
+- Add ember-cli-app-version for easy versioning and show up in Ember inspector
+- Add ember-try for testing different emberjs dependency and versions
 
 ## Installation
 

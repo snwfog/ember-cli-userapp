@@ -1,3 +1,5 @@
+# Ember CLI UserApp
+
 The MIT License (MIT)
 
 Copyright (c) 2016
