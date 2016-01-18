@@ -4,13 +4,12 @@ var EmberAddon = require('ember-cli/lib/broccoli/ember-addon');
 
 module.exports = function(defaults) {
   var app = new EmberAddon(defaults, {
-    'babel': {
-      optional: ['es7.decorators']
-    },
+    // Disable jshint test for now
+    'babel': { optional: ['es7.decorators'] },
+    'ember-cli-qunit': { useLintTree: false },
 
-    'ember-cli-qunit': {
-      useLintTree: false
-    }
+    // Enable pretender test mock server
+    pretender: { enabled: true }
   });
 
   /*
