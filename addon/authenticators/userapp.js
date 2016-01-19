@@ -5,10 +5,12 @@ import UserApp from 'userapp';
 
 const {
   Logger: { log, error, info, warn },
-  RSVP: { Promise }
+  RSVP: { Promise },
+  run
 } = Ember;
 
 export default BaseAuthenticator.extend({
+  _currentUser: null,
   /**
    * Authenticate the session.
    *
@@ -24,32 +26,26 @@ export default BaseAuthenticator.extend({
       // TODO: Run it once on the backburner
       UserApp.User.login({ login, password }, (error, result) => {
         if (error) {
-          reject(error);
+          run(null, reject, error);
         } else {
           if (result.locks && result.locks.indexOf('EMAIL_NOT_VERIFIED') > -1) {
             UserApp.setToken(null);
-            reject({
+            run(null, reject, {
               name:    'EMAIL_NOT_VERIFIED',
               message: 'Please verify your email address by clicking on the link in the verification email that we\'ve sent you.'
             });
           } else if (result.locks && result.locks.length > 0) {
             UserApp.setToken(null);
-            reject({ name: 'LOCKED', message: 'Your account has been locked.' });
+            run(null, reject, { name: 'LOCKED', message: 'Your account has been locked.' });
+          } else if (!result.token) {
+            run(null, reject, { name: 'CANNOT_FIND_TOKEN', message: 'Cannot find a valid token.'});
           } else {
-            if (!result.token) {
-              reject({ name: 'CANNOT_FIND_TOKEN', message: 'Cannot find a valid token.'});
-            }
-
             UserApp.setToken(result.token);
-            _this
-              ._load()
-              .then((user) => {
-                user.token = result.token;
-                resolve(user);
-              })
-              .catch((error) => {
-                reject(error);
-              });
+            _this._load().then((user) => {
+              user.token = result.token;
+              run(null, resolve, {user});
+            })
+            .catch((error) => { run(null, reject, error); });
           }
         }
       });
@@ -59,13 +55,25 @@ export default BaseAuthenticator.extend({
   _load() {
     return new Promise((resolve, reject) => {
       UserApp.User.get({ user_id: 'self' }, (error, users) => {
-        return !!(error) ? reject(error) : resolve(users[0]);
+        if (error) {
+          run(null, reject, error);
+        } else {
+          run(null, resolve, users[0]);
+        }
       });
     });
   },
 
   invalidate() {
-
+    return new Promise((resolve, reject) => {
+      UserApp.User.logout((error, result) => {
+        if (error) {
+          run(null, reject, error);
+        } else {
+          run(null, resolve, result);
+        }
+      });
+    });
   },
 
   restore() {

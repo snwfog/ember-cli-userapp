@@ -29,25 +29,22 @@ moduleFor('authenticator:userapp', {
   },
 });
 
-test('authenticator it exists', function(assert) {
+test('authenticator exists', function(assert) {
   let userappAuthenticator = this.subject();
   assert.ok(!!userappAuthenticator);
 });
 
-test('authenticator authenticate should return a promise', function(assert) {
+test('authenticator#authenticate should return a promise', function(assert) {
   let server = this.pretenderServer;
   server.post('https://api.userapp.io/v1/user.login', function(request) {
-    return [
-      200,
-      { "Content-Type": "application/json" },
-      JSON.stringify({}),
-    ];
+    return [ 200, { "Content-Type": "application/json" }, JSON.stringify({}) ];
   });
 
-  assert.ok(typeOf(this.subject().authenticate().then) === 'function');
+  var promise = this.subject().authenticate().catch((error) => {});
+  assert.ok(typeOf(promise.then) === 'function');
 });
 
-test('authenticator should fail on user email not verified', function(assert) {
+test('authenticator#authenticate should fail on user email not verified', function(assert) {
   let server = this.pretenderServer;
   server.post('https://api.userapp.io/v1/user.login', function(request) {
     return [
@@ -75,7 +72,7 @@ test('authenticator should fail on user email not verified', function(assert) {
     });
 });
 
-test('authenticator should fail on user lock', function(assert) {
+test('authenticator#authenticate should fail on user lock', function(assert) {
   let server = this.pretenderServer;
   server.post('https://api.userapp.io/v1/user.login', function(request) {
     return [
@@ -103,7 +100,7 @@ test('authenticator should fail on user lock', function(assert) {
     });
 });
 
-test('authenticator should return promise on success login', function(assert) {
+test('authenticator#authenticate should return user with token on success login', function(assert) {
   let server = this.pretenderServer;
   server.post('https://api.userapp.io/v1/user.login', function(request) {
     return [
@@ -118,38 +115,50 @@ test('authenticator should return promise on success login', function(assert) {
     ];
   });
 
+  let mockUser = [{
+    "user_id":        "random_user_id",
+    "first_name":     "Test_User_First_Name",
+    "last_name":      "Test_User_Last_Name",
+    "email":          "test@userapp.io",
+    "email_verified": false,
+    "login":          "test@userapp.io",
+    "properties":     {},
+    "features":       {},
+    "permissions":    {},
+    "subscription":   null,
+    "lock":           null,
+    "locks":          [],
+    "ip_address":     null,
+    "last_login_at":  1453173581,
+    "updated_at":     1453173581,
+    "created_at":     1453135148
+  }];
+
   server.post('https://api.userapp.io/v1/user.get', function(request) {
     return [
       200,
       { "Content-Type": "application/json" },
-      JSON.stringify([{
-        "user_id":        "random_user_id",
-        "first_name":     "Test_User_First_Name",
-        "last_name":      "Test_User_Last_Name",
-        "email":          "test@userapp.io",
-        "email_verified": false,
-        "login":          "test@userapp.io",
-        "properties":     {},
-        "features":       {},
-        "permissions":    {},
-        "subscription":   null,
-        "lock":           null,
-        "locks":          [],
-        "ip_address":     null,
-        "last_login_at":  1453173581,
-        "updated_at":     1453173581,
-        "created_at":     1453135148
-      }])
+      JSON.stringify(mockUser),
     ];
   });
 
   var resolved = assert.async();
   this.subject()
     .authenticate('test_username', 'test_password')
-    .then((user) => {
-      assert.ok(user['user_id'], 'random_user_id');
+    .then(({ user }) => {
+      assert.deepEqual(user, Ember.merge(mockUser[0], { token: 'random_token' }));
     })
     .finally(() => {
       resolved();
     });
+});
+
+test('authenticator#invalidate should return a promise', function(assert) {
+  let server = this.pretenderServer;
+  server.post('https://api.userapp.io/v1/user.logout', function(request) {
+    return [ 200, { "Content-Type": "application/json" }, JSON.stringify({}) ];
+  });
+
+  let promise = this.subject().invalidate();
+  assert.ok(typeOf(promise.then) === 'function');
 });
