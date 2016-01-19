@@ -21,7 +21,7 @@ export default BaseAuthenticator.extend({
   authenticate(login, password) {
     let _this = this;
     return new Promise((resolve, reject) => {
-      // Run it once on the backburner
+      // TODO: Run it once on the backburner
       UserApp.User.login({ login, password }, (error, result) => {
         if (error) {
           reject(error);
