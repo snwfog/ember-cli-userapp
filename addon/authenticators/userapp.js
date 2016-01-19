@@ -4,9 +4,9 @@ import BaseAuthenticator from 'ember-simple-auth/authenticators/base';
 import UserApp from 'userapp';
 
 const {
-        Logger: { log, error, info, warn },
-        RSVP: { Promise }
-        } = Ember;
+  Logger: { log, error, info, warn },
+  RSVP: { Promise }
+} = Ember;
 
 export default BaseAuthenticator.extend({
   /**
