@@ -5,7 +5,7 @@ import Pretender from 'pretender';
 import UserApp from 'userapp';
 
 const {
-  Logger: { log, error, info, warn },
+  Logger: { log, error, info, warn, debug },
   K,
   typeOf
 } = Ember;
@@ -133,6 +133,8 @@ test('authenticator#authenticate should return user with token on success login'
     "updated_at":     1453173581,
     "created_at":     1453135148
   }];
+
+  debug(`Mock user is ${mockUser[0]}`);
 
   server.post('https://api.userapp.io/v1/user.get', function(request) {
     return [
