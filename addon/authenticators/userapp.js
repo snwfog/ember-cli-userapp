@@ -82,6 +82,10 @@ export default BaseAuthenticator.extend({
    */
   restore(userResourceHash) {
     return new Promise(function(resolve, reject) {
+      if (Ember.isEmpty(userResourceHash['token'])) {
+        run(null, reject, 'User token id was not present.');
+      }
+      
       UserApp.Transport.Current.call({}, 1, 'token.heartbeat', { token: userResourceHash['token'] },
         function(error, result) {
           if (error) {

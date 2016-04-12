@@ -175,8 +175,33 @@ test('authenticator#restore should return a promise', function(assert) {
   assert.ok(typeOf(promise.then) === 'function');
 });
 
-test('authenticator#restore should be able to use current saved user authenticate information', function(assert) {
+test('authenticator#restore should reject if token is not present', function(assert) {
   let server = this.pretenderServer;
+  server.post('https://api.userapp.io/v1/token.heartbeat', function(request) {
+    return [ 200, { "Content-Type": "application/json" }, JSON.stringify({ alive: true }) ];
+  });
 
+  var resolved = assert.async();
+  this.subject()
+    .restore({ token: ''})
+    .then(function() { assert.notOk(true, 'When token is not present, promise should reject.'); })
+    .catch(function() { assert.ok(true, 'When token is not present, promise should be rejected'); })
+    .finally(function() { resolved(); });
+})
 
+test('authenticator#restore should reject if server failed to update heartbeat', function(assert) {
+  let server = this.pretenderServer;
+  server.post('https://api.userapp.io/v1/token.heartbeat', function(request) {
+    return [ 200, { "Content-Type": "application/json" }, JSON.stringify({
+      "error_code": "INVALID_CREDENTIALS",
+      "message":    "Unable to authenticate as user. Provided token does not exist."
+    }) ];
+  });
+
+  var resolved = assert.async();
+  this.subject()
+    .restore({ token: 'test_token'})
+    .then(function() { assert.notOk(true, 'When token is not present, promise should reject.'); })
+    .catch(function() { assert.ok(true, 'When token is not present, promise should be rejected'); })
+    .finally(function() { resolved(); });
 });
