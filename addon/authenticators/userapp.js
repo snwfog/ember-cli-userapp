@@ -11,6 +11,8 @@ const {
 
 export default BaseAuthenticator.extend({
   _currentUser: null,
+  _token: null,
+
   /**
    * Authenticate the session.
    *
