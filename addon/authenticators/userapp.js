@@ -11,7 +11,6 @@ const {
 
 export default BaseAuthenticator.extend({
   _currentUser: null,
-
   /**
    * Authenticate the session.
    *
@@ -24,6 +23,7 @@ export default BaseAuthenticator.extend({
   authenticate(login, password) {
     let _this = this;
     return new Promise((resolve, reject) => {
+      // TODO: Run it once on the backburner
       UserApp.User.login({ login, password }, (error, result) => {
         if (error) {
           run(null, reject, error);
@@ -76,7 +76,20 @@ export default BaseAuthenticator.extend({
     });
   },
 
-  restore() {
-
+  /**
+   * Send a heartbeat request to server, if server reply success,
+   * it means the token is still valid, then we resolve with success.
+   */
+  restore(userResourceHash) {
+    return new Promise(function(resolve, reject) {
+      UserApp.Transport.Current.call({}, 1, 'token.heartbeat', { token: userResourceHash['token'] },
+        function(error, result) {
+          if (error) {
+            run(null, reject, error);
+          } else {
+            run(null, resolve, result);
+          }
+        });
+    });
   }
 });

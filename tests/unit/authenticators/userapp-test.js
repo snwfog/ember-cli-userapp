@@ -164,3 +164,19 @@ test('authenticator#invalidate should return a promise', function(assert) {
   let promise = this.subject().invalidate();
   assert.ok(typeOf(promise.then) === 'function');
 });
+
+test('authenticator#restore should return a promise', function(assert) {
+  let server = this.pretenderServer;
+  server.post('https://api.userapp.io/v1/token.heartbeat', function(request) {
+    return [ 200, { "Content-Type": "application/json" }, JSON.stringify({ alive: true }) ];
+  });
+
+  var promise = this.subject().restore({ token: 'test_token' });
+  assert.ok(typeOf(promise.then) === 'function');
+});
+
+test('authenticator#restore should be able to use current saved user authenticate information', function(assert) {
+  let server = this.pretenderServer;
+
+
+});
