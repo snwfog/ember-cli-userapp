@@ -86,12 +86,19 @@ export default BaseAuthenticator.extend({
         run(null, reject, 'User token id was not present.');
       }
 
-      UserApp.Transport.Current.call({}, 1, 'token.heartbeat', { token: userHash.user.token },
+      UserApp.Transport.Current.call({ token: userHash.user.token }, 1, 'token.heartbeat', {},
         function(error, result) {
           if (error) {
             run(null, reject, error);
           } else {
-            run(null, resolve, result);
+            UserApp.setToken(userHash.user.token);
+            _this._load().then(function(user) {
+              user.token = userHash.user.token;
+              run(null, resolve, { user });
+            })
+            .catch(function(error) {
+              run(null, reject, error);
+            });
           }
         });
     });
