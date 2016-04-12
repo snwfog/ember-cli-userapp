@@ -183,7 +183,7 @@ test('authenticator#restore should reject if token is not present', function(ass
 
   var resolved = assert.async();
   this.subject()
-    .restore({ token: ''})
+    .restore({ user: { token: '' }})
     .then(function() { assert.notOk(true, 'When token is not present, promise should reject.'); })
     .catch(function() { assert.ok(true, 'When token is not present, promise should be rejected'); })
     .finally(function() { resolved(); });
@@ -200,7 +200,7 @@ test('authenticator#restore should reject if server failed to update heartbeat',
 
   var resolved = assert.async();
   this.subject()
-    .restore({ token: 'test_token'})
+    .restore({ user: { token: 'test_token' }})
     .then(function() { assert.notOk(true, 'When token is not present, promise should reject.'); })
     .catch(function() { assert.ok(true, 'When token is not present, promise should be rejected'); })
     .finally(function() { resolved(); });

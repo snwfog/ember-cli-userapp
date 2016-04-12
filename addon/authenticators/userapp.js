@@ -80,13 +80,13 @@ export default BaseAuthenticator.extend({
    * Send a heartbeat request to server, if server reply success,
    * it means the token is still valid, then we resolve with success.
    */
-  restore(userResourceHash) {
+  restore(userHash) {
     return new Promise(function(resolve, reject) {
-      if (Ember.isEmpty(userResourceHash['token'])) {
+      if (Ember.isEmpty(userHash.user) || Ember.isEmpty(userHash.user.token)) {
         run(null, reject, 'User token id was not present.');
       }
-      
-      UserApp.Transport.Current.call({}, 1, 'token.heartbeat', { token: userResourceHash['token'] },
+
+      UserApp.Transport.Current.call({}, 1, 'token.heartbeat', { token: userHash.user.token },
         function(error, result) {
           if (error) {
             run(null, reject, error);
