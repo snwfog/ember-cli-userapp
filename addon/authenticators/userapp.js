@@ -81,6 +81,7 @@ export default BaseAuthenticator.extend({
    * it means the token is still valid, then we resolve with success.
    */
   restore(userHash) {
+    var _this = this;
     return new Promise(function(resolve, reject) {
       if (Ember.isEmpty(userHash.user) || Ember.isEmpty(userHash.user.token)) {
         run(null, reject, 'User token id was not present.');
