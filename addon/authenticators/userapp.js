@@ -11,6 +11,7 @@ const {
 
 export default BaseAuthenticator.extend({
   _currentUser: null,
+
   /**
    * Authenticate the session.
    *
@@ -23,7 +24,6 @@ export default BaseAuthenticator.extend({
   authenticate(login, password) {
     let _this = this;
     return new Promise((resolve, reject) => {
-      // TODO: Run it once on the backburner
       UserApp.User.login({ login, password }, (error, result) => {
         if (error) {
           run(null, reject, error);
