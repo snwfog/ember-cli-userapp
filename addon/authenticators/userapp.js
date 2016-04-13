@@ -1,17 +1,22 @@
 import Ember from 'ember';
 import BaseAuthenticator from 'ember-simple-auth/authenticators/base';
 
+import ENV from '../config/environment';
 import UserApp from 'userapp';
 
 const {
         Logger: { log, error, info, warn },
         RSVP: { Promise },
-        run
+        run,
         } = Ember;
 
 export default BaseAuthenticator.extend({
   _currentUser: null,
   _token:       null,
+
+  _buildUrl(action) {
+    return `https://api.userapp.io/v1/${action}`;
+  },
 
   /**
    * Authenticate the session.
@@ -24,9 +29,9 @@ export default BaseAuthenticator.extend({
    */
   authenticate(login, password) {
     let _this = this;
-    return new Promise((resolve, reject) => {
+    return new Promise(function(resolve, reject) {
       // TODO: Run it once on the backburner
-      UserApp.User.login({ login, password }, (error, result) => {
+      Ember.$.ajax(this.buildUrl('user.login'), { login, password }, function(error, result) {
         if (error) {
           run(null, reject, error);
         } else {
