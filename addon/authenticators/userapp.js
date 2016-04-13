@@ -1,8 +1,8 @@
 import Ember from 'ember';
 import BaseAuthenticator from 'ember-simple-auth/authenticators/base';
 
-import ENV from '../config/environment';
 import UserApp from 'userapp';
+import base64 from '../utils/base64';
 
 const {
         Logger: { log, error, info, warn },
@@ -13,9 +13,26 @@ const {
 export default BaseAuthenticator.extend({
   _currentUser: null,
   _token:       null,
+  _appId:       null,
+  _apiVersion:  1,
+  _apiEndpoint: 'https://api.userapp.io',
 
   _buildUrl(action) {
-    return `https://api.userapp.io/v1/${action}`;
+    var { _apiVersion, _apiEndpoint } = this.getProperties(['_apiVersion', '_apiEndpoint']);
+    return `${_apiEndpoint}/v${_apiVersion}/${action}`;
+  },
+
+  _sendRequest(action, data, error, success) {
+    var _this = this;
+    return Ember.$.ajax(action, {
+      error,
+      success,
+      data,
+      dataType: 'json',
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'Authorization': `Basic ${base64(_this.get('_appId'))}:${base64(_this.get('_token'))}` },
+    });
   },
 
   /**
@@ -28,66 +45,83 @@ export default BaseAuthenticator.extend({
    * @public
    */
   authenticate(login, password) {
-    let _this = this;
+    var _this = this;
     return new Promise(function(resolve, reject) {
       // TODO: Run it once on the backburner
-      Ember.$.ajax(this.buildUrl('user.login'), { login, password }, function(error, result) {
-        if (error) {
-          run(null, reject, error);
-        } else {
+      var requestActionUrl = _this._buildUrl('user.login');
+      _this._sendRequest(requestActionUrl, { login, password },
+        function(jqXHR, status, error) {
+          run(null, reject, { error_code: 'CONNECTION_ERROR', message: `Unable to load '${requestActionUrl}'`, });
+        },
+
+        function(result, status, jqXHR) {
+          if (result['error_code'] && !Ember.isEmpty(result['error_code'])) { run(null, reject, result); }
           if (result.locks && result.locks.indexOf('EMAIL_NOT_VERIFIED') > -1) {
-            UserApp.setToken(null);
+            // UserApp.setToken(null);
+            _this.set('_token', null);
             run(null, reject, {
               name: 'EMAIL_NOT_VERIFIED',
-              message: 'Please verify your email address by clicking on the link in the verification email that we\'ve sent you.'
+              message: 'Please verify your email address and your email inbox for our verification email',
             });
           } else if (result.locks && result.locks.length > 0) {
-            UserApp.setToken(null);
-            run(null, reject, {
-              name:    'LOCKED',
-              message: 'Your account has been locked.'
-            });
+            // UserApp.setToken(null);
+            _this.set('_token', null);
+            run(null, reject, { error_code: 'LOCKED', message: 'Your account has been locked.' });
           } else if (!result.token) {
-            run(null, reject, {
-              name:    'CANNOT_FIND_TOKEN',
-              message: 'Cannot find a valid token.'
-            });
+            run(null, reject, { error_code: 'CANNOT_FIND_TOKEN', message: 'Cannot find a valid token.' });
           } else {
-            UserApp.setToken(result.token);
-            _this._load().then((user) => {
+            // UserApp.setToken(result.token);
+            _this.set('_token', result.token);
+            _this._load()
+            .then(function(user) {
                 user.token = result.token;
                 run(null, resolve, { user });
-              })
-              .catch((error) => {
-                run(null, reject, error);
-              });
+            })
+            .catch(function(error) {
+              _this.set('_token', null);
+              run(null, reject, error);
+            });
           }
         }
-      });
+      );
     });
   },
 
   _load() {
-    return new Promise((resolve, reject) => {
-      UserApp.User.get({ user_id: 'self' }, (error, users) => {
-        if (error) {
-          run(null, reject, error);
-        } else {
-          run(null, resolve, users[ 0 ]);
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this._sendRequest(_this._buildUrl('user.get'), { user_id: 'self' },
+        function(jqXHR, status, error) {
+          run(null, reject, { error_code: 'CONNECTION_ERROR', message: `Unable to load '${requestActionUrl}'`, });
+        },
+        function (result, status, jqXHR) {
+          if (result['error_code'] && !Ember.isEmpty(result['error_code']))
+            run(null, reject, result);
+          else
+            run(null, resolve, result[0]);
         }
-      });
+      );
     });
   },
 
   invalidate() {
-    return new Promise((resolve, reject) => {
-      UserApp.User.logout((error, result) => {
-        if (error) {
-          run(null, reject, error);
-        } else {
-          run(null, resolve, result);
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      var requestActionUrl = _this._buildUrl('user.logout');
+      _this._sendRequest(requestActionUrl, {},
+        function(jqXHR, status, error) {
+          _this.set('_token', null);
+          run(null, reject, { error_code: 'CONNECTION_ERROR', message: `Unable to load '${requestActionUrl}'`, });
+        },
+
+        function (result, status, jqXHR) {
+          _this.set('_token', null);
+          if (result['error_code'] && !Ember.isEmpty(result['error_code']))
+            run(null, reject, result);
+          else
+            run(null, resolve, result[0]);
         }
-      });
+      )
     });
   },
 
@@ -99,24 +133,32 @@ export default BaseAuthenticator.extend({
     var _this = this;
     return new Promise(function (resolve, reject) {
       if (Ember.isEmpty(userHash.user) || Ember.isEmpty(userHash.user.token)) {
-        run(null, reject, 'User token id was not present.');
+        run(null, reject, { error_code: 'TOKEN_NOT_PRESENT', message: 'User token id was not present.');
       }
 
-      UserApp.Transport.Current.call({ token: userHash.user.token }, 1, 'token.heartbeat', {},
-        function (error, result) {
-          if (error) {
-            run(null, reject, error);
-          } else {
-            UserApp.setToken(userHash.user.token);
-            _this._load().then(function (user) {
-                user.token = userHash.user.token;
-                run(null, resolve, { user });
-              })
-              .catch(function (error) {
-                run(null, reject, error);
-              });
+      var requestActionUrl = _this._buildUrl('token.heartbeat');
+      _this._sendRequest(requestActionUrl, { token: userHash.user.token },
+        function(jqXHR, status, error) {
+          _this.set('_token', null);
+          run(null, reject, { error_code: 'CONNECTION_ERROR', message: `Unable to load '${requestActionUrl}'`, });
+        },
+
+        function (result, status, jqXHR) {
+          if (result['error_code'] && !Ember.isEmpty(result['error_code']))
+            run(null, reject, result);
+          else {
+            _this.set('_token', userHash.user.token);
+            _this._load().then(function(user) {
+              user.token = userHash.user.token;
+              run(null, resolve, { user });
+            })
+            .catch(function (error) {
+              _this.set('_token', null);
+              run(null, reject, error);
+            });
           }
-        });
+        }
+      );
     });
   }
 });

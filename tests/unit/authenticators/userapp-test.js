@@ -5,10 +5,10 @@ import Pretender from 'pretender';
 import UserApp from 'userapp';
 
 const {
-        Logger: { log, error, info, warn, debug },
-        K,
-        typeOf
-        } = Ember;
+  Logger: { log, error, info, warn, debug },
+  K,
+  typeOf
+} = Ember;
 
 moduleFor('authenticator:userapp', {
   integration: false,
@@ -19,8 +19,8 @@ moduleFor('authenticator:userapp', {
     UserApp.initialize({ appId: 'test_app_id' });
     // Create pretender server and return true for preflight
     this.pretenderServer = new Pretender();
-    this.pretenderServer.register('OPTIONS', 'https://api.userapp.io/v1/*', function () {
-      return [ 200, { "Content-Type": "application/json" }, "" ];
+    this.pretenderServer.register('OPTIONS', 'https://api.userapp.io/v1/*', function() {
+      return [200, { "Content-Type": "application/json" }, ""];
     });
   },
 
@@ -29,25 +29,24 @@ moduleFor('authenticator:userapp', {
   },
 });
 
-test('authenticator exists', function (assert) {
+test('authenticator exists', function(assert) {
   let userappAuthenticator = this.subject();
   assert.ok(!!userappAuthenticator);
 });
 
-test('authenticator#authenticate should return a promise', function (assert) {
+test('authenticator#authenticate should return a promise', function(assert) {
   let server = this.pretenderServer;
-  server.post('https://api.userapp.io/v1/user.login', function (request) {
+  server.post('https://api.userapp.io/v1/user.login', function(request) {
     return [ 200, { "Content-Type": "application/json" }, JSON.stringify({}) ];
   });
 
-  var promise = this.subject().authenticate().catch((error) => {
-  });
+  var promise = this.subject().authenticate().catch((error) => {});
   assert.ok(typeOf(promise.then) === 'function');
 });
 
-test('authenticator#authenticate should fail on user email not verified', function (assert) {
+test('authenticator#authenticate should fail on user email not verified', function(assert) {
   let server = this.pretenderServer;
-  server.post('https://api.userapp.io/v1/user.login', function (request) {
+  server.post('https://api.userapp.io/v1/user.login', function(request) {
     return [
       200,
       { "Content-Type": "application/json" },
@@ -55,7 +54,7 @@ test('authenticator#authenticate should fail on user email not verified', functi
         "token":     "random_token",
         "user_id":   "random_user_id",
         "lock_type": "EMAIL_NOT_VERIFIED",
-        "locks":     [ "EMAIL_NOT_VERIFIED" ],
+        "locks":     ["EMAIL_NOT_VERIFIED"],
       })
     ];
   });
@@ -73,9 +72,9 @@ test('authenticator#authenticate should fail on user email not verified', functi
     });
 });
 
-test('authenticator#authenticate should fail on user lock', function (assert) {
+test('authenticator#authenticate should fail on user lock', function(assert) {
   let server = this.pretenderServer;
-  server.post('https://api.userapp.io/v1/user.login', function (request) {
+  server.post('https://api.userapp.io/v1/user.login', function(request) {
     return [
       200,
       { "Content-Type": "application/json" },
@@ -83,7 +82,7 @@ test('authenticator#authenticate should fail on user lock', function (assert) {
         "token":     "random_token",
         "user_id":   "random_user_id",
         "lock_type": "USER_ISSUED",
-        "locks":     [ "USER_ISSUED" ],
+        "locks":     ["USER_ISSUED"],
       })
     ];
   });
@@ -101,9 +100,9 @@ test('authenticator#authenticate should fail on user lock', function (assert) {
     });
 });
 
-test('authenticator#authenticate should return user with token on success login', function (assert) {
+test('authenticator#authenticate should return user with token on success login', function(assert) {
   let server = this.pretenderServer;
-  server.post('https://api.userapp.io/v1/user.login', function (request) {
+  server.post('https://api.userapp.io/v1/user.login', function(request) {
     return [
       200,
       { "Content-Type": "application/json" },
@@ -116,7 +115,7 @@ test('authenticator#authenticate should return user with token on success login'
     ];
   });
 
-  let mockUser = [ {
+  let mockUser = [{
     "user_id":        "random_user_id",
     "first_name":     "Test_User_First_Name",
     "last_name":      "Test_User_Last_Name",
@@ -133,11 +132,11 @@ test('authenticator#authenticate should return user with token on success login'
     "last_login_at":  1453173581,
     "updated_at":     1453173581,
     "created_at":     1453135148
-  } ];
+  }];
 
-  debug(`Mock user is ${mockUser[ 0 ]}`);
+  debug(`Mock user is ${mockUser[0]}`);
 
-  server.post('https://api.userapp.io/v1/user.get', function (request) {
+  server.post('https://api.userapp.io/v1/user.get', function(request) {
     return [
       200,
       { "Content-Type": "application/json" },
@@ -149,16 +148,16 @@ test('authenticator#authenticate should return user with token on success login'
   this.subject()
     .authenticate('test_username', 'test_password')
     .then(({ user }) => {
-      assert.deepEqual(user, Ember.merge(mockUser[ 0 ], { token: 'random_token' }));
+      assert.deepEqual(user, Ember.merge(mockUser[0], { token: 'random_token' }));
     })
     .finally(() => {
       resolved();
     });
 });
 
-test('authenticator#invalidate should return a promise', function (assert) {
+test('authenticator#invalidate should return a promise', function(assert) {
   let server = this.pretenderServer;
-  server.post('https://api.userapp.io/v1/user.logout', function (request) {
+  server.post('https://api.userapp.io/v1/user.logout', function(request) {
     return [ 200, { "Content-Type": "application/json" }, JSON.stringify({}) ];
   });
 
@@ -166,9 +165,9 @@ test('authenticator#invalidate should return a promise', function (assert) {
   assert.ok(typeOf(promise.then) === 'function');
 });
 
-test('authenticator#restore should return a promise', function (assert) {
+test('authenticator#restore should return a promise', function(assert) {
   let server = this.pretenderServer;
-  server.post('https://api.userapp.io/v1/token.heartbeat', function (request) {
+  server.post('https://api.userapp.io/v1/token.heartbeat', function(request) {
     return [ 200, { "Content-Type": "application/json" }, JSON.stringify({ alive: true }) ];
   });
 
@@ -176,29 +175,23 @@ test('authenticator#restore should return a promise', function (assert) {
   assert.ok(typeOf(promise.then) === 'function');
 });
 
-test('authenticator#restore should reject if token is not present', function (assert) {
+test('authenticator#restore should reject if token is not present', function(assert) {
   let server = this.pretenderServer;
-  server.post('https://api.userapp.io/v1/token.heartbeat', function (request) {
+  server.post('https://api.userapp.io/v1/token.heartbeat', function(request) {
     return [ 200, { "Content-Type": "application/json" }, JSON.stringify({ alive: true }) ];
   });
 
   var resolved = assert.async();
   this.subject()
-    .restore({ user: { token: '' } })
-    .then(function () {
-      assert.notOk(true, 'When token is not present, promise should reject.');
-    })
-    .catch(function () {
-      assert.ok(true, 'When token is not present, promise should be rejected');
-    })
-    .finally(function () {
-      resolved();
-    });
+    .restore({ user: { token: '' }})
+    .then(function() { assert.notOk(true, 'When token is not present, promise should reject.'); })
+    .catch(function() { assert.ok(true, 'When token is not present, promise should be rejected'); })
+    .finally(function() { resolved(); });
 })
 
-test('authenticator#restore should reject if server failed to update heartbeat', function (assert) {
+test('authenticator#restore should reject if server failed to update heartbeat', function(assert) {
   let server = this.pretenderServer;
-  server.post('https://api.userapp.io/v1/token.heartbeat', function (request) {
+  server.post('https://api.userapp.io/v1/token.heartbeat', function(request) {
     return [ 200, { "Content-Type": "application/json" }, JSON.stringify({
       "error_code": "INVALID_CREDENTIALS",
       "message":    "Unable to authenticate as user. Provided token does not exist."
@@ -207,14 +200,13 @@ test('authenticator#restore should reject if server failed to update heartbeat',
 
   var resolved = assert.async();
   this.subject()
-    .restore({ user: { token: 'test_token' } })
-    .then(function () {
-      assert.notOk(true, 'When token is not present, promise should reject.');
-    })
-    .catch(function () {
-      assert.ok(true, 'When token is not present, promise should be rejected');
-    })
-    .finally(function () {
-      resolved();
-    });
+    .restore({ user: { token: 'test_token' }})
+    .then(function() { assert.notOk(true, 'When token is not present, promise should reject.'); })
+    .catch(function() { assert.ok(true, 'When token is not present, promise should be rejected'); })
+    .finally(function() { resolved(); });
+});
+
+test('authenticator#buildUrl should return valid results', function(assert) {
+  var actionEndpoint = this.subject()._buildUrl('user.login')
+  assert.equal('https://api.userapp.io/v1/user.login', actionEndpoint);
 });
