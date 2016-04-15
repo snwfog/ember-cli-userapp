@@ -63,17 +63,17 @@ export default BaseAuthenticator.extend({
    */
   restore(userHash) {
     return new Promise(function (resolve, reject) {
-      if (Ember.isEmpty(userHash.user) || Ember.isEmpty(userHash.user.token)) {
-        run(null, reject, 'User token id was not present.');
+      if (Ember.isEmpty(userHash.token) || Ember.isEmpty(userHash.user_id)) {
+        run(null, reject, 'User session was not present.');
       }
 
-      UserApp.Transport.Current.call({ token: userHash.user.token }, 1, 'token.heartbeat', {},
+      UserApp.Transport.Current.call({ token: userHash.token }, 1, 'token.heartbeat', {},
         function (error, result) {
           if (error || Ember.isEmpty(result.alive)) {
             UserApp.setToken(null);
             run(null, reject, error);
           } else {
-            UserApp.setToken(userHash.user.token);
+            UserApp.setToken(userHash.token);
             run(null, resolve, userHash);
           }
         }
