@@ -103,17 +103,15 @@ test('authenticator#authenticate should fail on user lock', function (assert) {
 
 test('authenticator#authenticate should return user with token on success login', function (assert) {
   let server = this.pretenderServer;
+  let authenticatedHash = {
+    "token":     "random_token",
+    "user_id":   "random_user_id",
+    "lock_type": "",
+    "locks":     [],
+  };
+
   server.post('https://api.userapp.io/v1/user.login', function (request) {
-    return [
-      200,
-      { "Content-Type": "application/json" },
-      JSON.stringify({
-        "token":     "random_token",
-        "user_id":   "random_user_id",
-        "lock_type": "",
-        "locks":     [],
-      })
-    ];
+    return [ 200, { "Content-Type": "application/json" }, JSON.stringify(authenticatedHash) ];
   });
 
   let mockUser = [ {
@@ -148,8 +146,8 @@ test('authenticator#authenticate should return user with token on success login'
   var resolved = assert.async();
   this.subject()
     .authenticate('test_username', 'test_password')
-    .then(({ user }) => {
-      assert.deepEqual(user, Ember.merge(mockUser[ 0 ], { token: 'random_token' }));
+    .then(function(hash) {
+      assert.deepEqual(authenticatedHash, hash);
     })
     .finally(() => {
       resolved();
@@ -194,7 +192,7 @@ test('authenticator#restore should reject if token is not present', function (as
     .finally(function () {
       resolved();
     });
-})
+});
 
 test('authenticator#restore should reject if server failed to update heartbeat', function (assert) {
   let server = this.pretenderServer;
